@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌹 Frida - vil du være min Valentine? 🌹</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(145deg, #ffb6c1 0%, #ff4d6d 100%);
+      font-family: 'Segoe UI', 'Helvetica', 'Arial', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Fallende roser */
+    .rose-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .rose {
+      position: absolute;
+      font-size: 2.5rem;
+      filter: drop-shadow(0 5px 10px rgba(199, 21, 133, 0.5));
+      animation: fall linear infinite;
+      top: -10%;
+      user-select: none;
+      pointer-events: none;
+      opacity: 0.8;
+    }
+
+    @keyframes fall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 0.9; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0.2; }
+    }
+
+    /* Hovedkort */
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 60px;
+      box-shadow: 0 30px 50px rgba(199, 21, 133, 0.4), 0 0 0 4px #fff inset, 0 0 0 8px #ffb6c1 inset;
+      padding: 3rem 5rem;
+      text-align: center;
+      z-index: 10;
+      max-width: 1100px;
+      width: 90%;
+      border: 4px solid #ff4d6d;
+      transition: opacity 0.5s ease, transform 0.3s ease;
+      position: relative;
+    }
+
+    .card.fade-out {
+      opacity: 0;
+      transform: scale(0.95);
+      pointer-events: none;
+    }
+
+    #hovedTekst {
+      font-size: 4rem;
+      color: #c71585;
+      text-shadow: 4px 4px 0 #ffe4ec, 6px 6px 0 #ffb6c1;
+      margin-bottom: 2.5rem;
+      letter-spacing: 2px;
+      word-break: break-word;
+      line-height: 1.4;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    /* Knappecontainer */
+    .button-container {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      align-items: center;
+      gap: 3rem;
+      margin: 2rem 0 1rem;
+      flex-wrap: wrap;
+      position: relative;
+      z-index: 20;
+      min-height: 250px;
+      width: 100%;
+    }
+
+    /* Ja-knapp */
+    .btn-ja {
+      background: #ff4d6d;
+      color: white;
+      border: none;
+      font-weight: bold;
+      font-size: 3.5rem;
+      padding: 1.2rem 4rem;
+      border-radius: 80px;
+      cursor: pointer;
+      box-shadow: 0 10px 0 #b13e55, 0 15px 25px rgba(0,0,0,0.3);
+      letter-spacing: 2px;
+      min-width: 250px;
+      border: 4px solid white;
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: center;
+      z-index: 40;
+      position: relative;
+    }
+
+    .btn-ja:hover {
+      transform: scale(1.02);
+      background: #ff3355;
+    }
+
+    .btn-ja:active {
+      transform: translateY(6px);
+      box-shadow: 0 4px 0 #b13e55, 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    /* Nei-knapp */
+    .btn-nei {
+      background: #4a4e69;
+      color: #f2e9e4;
+      border: none;
+      font-weight: bold;
+      font-size: 3.5rem;
+      padding: 1.2rem 4rem;
+      border-radius: 80px;
+      cursor: pointer;
+      box-shadow: 0 10px 0 #2a2e3f, 0 15px 25px rgba(0,0,0,0.3);
+      letter-spacing: 2px;
+      min-width: 250px;
+      border: 4px solid white;
+      transition: all 0.2s ease;
+      position: absolute;
+      z-index: 30;
+    }
+
+    .btn-nei:hover {
+      background: #5a5e79;
+      transform: scale(0.98);
+    }
+
+    .btn-nei:active {
+      transform: translateY(6px);
+      box-shadow: 0 4px 0 #2a2e3f, 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    /* Feiringsside */
+    .celebration-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(145deg, #ff4d6d 0%, #c71585 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+    }
+
+    .celebration-screen.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .celebration-content {
+      text-align: center;
+      color: white;
+      animation: pulse 2s infinite ease-in-out;
+      padding: 2rem;
+    }
+
+    .celebration-content h1 {
+      font-size: 5.5rem;
+      color: white;
+      text-shadow: 6px 6px 0 #9e2b5b, 10px 10px 0 #6b1a3d;
+      margin-bottom: 2rem;
+      letter-spacing: 4px;
+      line-height: 1.3;
+    }
+
+    .celebration-content p {
+      font-size: 2.5rem;
+      color: white;
+      text-shadow: 3px 3px 0 #9e2b5b, 5px 5px 0 #6b1a3d;
+      margin: 1.5rem 0;
+    }
+
+    .celebration-content .small-text {
+      font-size: 2rem;
+      color: #ffe4ec;
+      text-shadow: 2px 2px 0 #9e2b5b;
+      margin-top: 3rem;
+      opacity: 0.9;
+    }
+
+    @media (max-width: 1400px) {
+      .celebration-content h1 {
+        font-size: 4rem;
+        white-space: normal;
+      }
+
+      .celebration-content p {
+        font-size: 2rem;
+      }
+
+      .celebration-content .small-text {
+        font-size: 1.5rem;
+      }
+
+      #hovedTekst {
+        font-size: 3rem;
+      }
+
+      .btn-ja, .btn-nei {
+        font-size: 2.5rem;
+        padding: 1rem 2.5rem;
+        min-width: 200px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        padding: 2rem;
+        border-radius: 40px;
+      }
+
+      #hovedTekst {
+        font-size: 2.2rem;
+        min-height: 150px;
+      }
+
+      .btn-ja, .btn-nei {
+        font-size: 2rem;
+        padding: 0.8rem 2rem;
+        min-width: 150px;
+      }
+
+      .button-container {
+        gap: 1.5rem;
+        min-height: 200px;
+      }
+
+      .celebration-content h1 {
+        font-size: 2.5rem;
+      }
+
+      .celebration-content p {
+        font-size: 1.5rem;
+      }
+
+      .celebration-content .small-text {
+        font-size: 1.2rem;
+      }
+    }
+
+    .celebration-roses {
+      font-size: 5rem;
+      margin-top: 2rem;
+      filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+      animation: spinRoses 15s linear infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes spinRoses {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Ekstra roser på feiringssiden */
+    .celebration-rose-fall {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1001;
+    }
+
+    .celebration-rose-fall .rose {
+      animation-duration: 3s;
+      opacity: 0.9;
+      font-size: 3rem;
+    }
+
+    /* Liten hjertedekorasjon */
+    .floating-heart {
+      position: fixed;
+      font-size: 2rem;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: float 3s infinite ease-in-out;
+      z-index: 40;
+      opacity: 0.7;
+    }
+
+    @keyframes float {
+      0% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(-10px); }
+      100% { transform: translateX(-50%) translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Fallende roser (hovedside) -->
+  <div class="rose-container" id="roseContainer"></div>
+
+  <!-- Feiringsside (skjult til JA trykkes) -->
+  <div class="celebration-screen" id="celebrationScreen">
+    <div class="celebration-rose-fall" id="celebrationRoses"></div>
+    <div class="celebration-content">
+      <h1>WOOOOOHOOOOOOOOOOO</h1>
+      <p>savne dg ❤️</p>
+      <div class="celebration-roses">🌹❤️🌹❤️🌹❤️🌹</div>
+      <div class="small-text">fyf 67 dager igjen 🌹</div>
+    </div>
+  </div>
+
+  <!-- Hovedkort -->
+  <div class="card" id="mainCard">
+    <div id="hovedTekst">🌹 Frida vil du være min Valentine? 🌹</div>
+
+    <div class="button-container" id="buttonContainer">
+      <button class="btn-ja" id="jaBtn">JA ❤️</button>
+      <button class="btn-nei" id="neiBtn">Nei 💔</button>
+    </div>
+  </div>
+
+  <div class="floating-heart">❤️</div>
+
+  <script>
+    (function() {
+      // Elementer
+      const jaBtn = document.getElementById('jaBtn');
+      const neiBtn = document.getElementById('neiBtn');
+      const buttonContainer = document.getElementById('buttonContainer');
+      const roseContainer = document.getElementById('roseContainer');
+      const celebrationScreen = document.getElementById('celebrationScreen');
+      const celebrationRoses = document.getElementById('celebrationRoses');
+      const mainCard = document.getElementById('mainCard');
+      const hovedTekst = document.getElementById('hovedTekst');
+
+      // State
+      let neiClickCount = 0;
+      let isAnswered = false;
+      let currentPositionIndex = 0;
+
+      // Tekster som endrer seg - 7 spørsmål
+      const neiTekster = [
+        'JOOOOOO🙏',
+        'Ombestemt deg nå? 🤔',
+        'Vær så snill? 🙏',
+        'Min forlovede 💕',
+        'PLEASE BBY! 🥹',
+        'Du e min, så du MÅ ❤️',
+        'Så du ville bli min Valentine? 💖'
+      ];
+
+      // Opprinnelig tekst
+      const originalTekst = '🌹 Frida vil du være min Valentine? 🌹';
+
+      // FASTE POSISJONER for Nei-knappen (i prosent av container)
+      const fastePosisjoner = [
+        { left: '10%', top: '10%' },     // Posisjon 1: Øverst til venstre
+        { left: '70%', top: '15%' },     // Posisjon 2: Øverst til høyre
+        { left: '20%', top: '60%' },     // Posisjon 3: Midt venstre
+        { left: '60%', top: '70%' },     // Posisjon 4: Nederst til høyre
+        { left: '40%', top: '30%' },     // Posisjon 5: Midt øverst
+        { left: '30%', top: '80%' },     // Posisjon 6: Nederst venstre
+        { left: '80%', top: '25%' },     // Posisjon 7: Høyre side, øverst (NY - trygg posisjon)
+        { left: '15%', top: '40%' },     // Posisjon 8: Venstre midt
+        { left: '75%', top: '55%' },     // Posisjon 9: Høyre midt
+        { left: '45%', top: '75%' }      // Posisjon 10: Nedre midt
+      ];
+
+      // Opprett fallende roser på hovedside
+      function createRoses() {
+        for (let i = 0; i < 60; i++) {
+          const rose = document.createElement('div');
+          rose.className = 'rose';
+          // Varierte symboler
+          const symbols = ['🌹', '🌹', '🌹', '🌹', '❤️', '🌸', '💖', '🌺'];
+          rose.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+          rose.style.left = Math.random() * 100 + '%';
+          rose.style.fontSize = (1.5 + Math.random() * 3) + 'rem';
+          rose.style.animationDuration = (3 + Math.random() * 7) + 's';
+          rose.style.animationDelay = (Math.random() * -10) + 's';
+          roseContainer.appendChild(rose);
+        }
+      }
+
+      // Opprett enda flere roser på feiringssiden
+      function createCelebrationRoses() {
+        for (let i = 0; i < 100; i++) {
+          const rose = document.createElement('div');
+          rose.className = 'rose';
+          rose.textContent = '🌹';
+          rose.style.left = Math.random() * 100 + '%';
+          rose.style.fontSize = (2 + Math.random() * 4) + 'rem';
+          rose.style.animationDuration = (1.5 + Math.random() * 3) + 's';
+          rose.style.animationDelay = (Math.random() * -5) + 's';
+          celebrationRoses.appendChild(rose);
+        }
+      }
+
+      // Funksjon for å flytte Nei-knappen til en FAST posisjon (veksler mellom faste plasser)
+      function moveNeiButtonToFixedPosition() {
+        if (isAnswered) return;
+
+        // Øk posisjonsindeksen for å gå til neste faste plass
+        currentPositionIndex = (currentPositionIndex + 1) % fastePosisjoner.length;
+
+        // Hent posisjon fra listen over faste posisjoner
+        const pos = fastePosisjoner[currentPositionIndex];
+
+        // Flytt knappen til fast posisjon
+        neiBtn.style.position = 'absolute';
+        neiBtn.style.left = pos.left;
+        neiBtn.style.top = pos.top;
+        neiBtn.style.transform = 'translate(-50%, -50%)'; // Sentrer knappen i punktet
+        neiBtn.style.right = 'auto';
+        neiBtn.style.bottom = 'auto';
+
+        // Sørg for at Nei-knappen alltid er bak JA (lavere z-index)
+        neiBtn.style.zIndex = '30';
+        jaBtn.style.zIndex = '40';
+      }
+
+      // Gjør JA-knappen større - VOKSER SAKTE SLIK AT DEN IKKE DEKKER NEI FØR ETTER 7 KLIKK
+      function updateJaButton() {
+        // Øk størrelse basert på antall klikk
+        let scale;
+
+        // VELDIG VIKTIG: JA-knappen vokser VELDIG SAKTE og skal IKKE dekke Nei før etter 7 klikk
+        if (neiClickCount < 7) {
+          // Vokser ekstremt sakte - maks 1.3 ved klikk 6, slik at den ALDRI dekker Nei
+          scale = 1 + (neiClickCount * 0.05); // Maks 1.3 ved klikk 6
+        } else {
+          // ETTER 7 klikk: vokser raskere for å dekke Nei
+          scale = Math.min(1.35 + ((neiClickCount - 6) * 0.3), 2.8);
+        }
+
+        jaBtn.style.transform = `scale(${scale})`;
+
+        // Endre farge gradvis mot gull
+        jaBtn.style.background = `rgb(255, ${Math.max(0, 77 - neiClickCount * 5)}, ${Math.max(0, 109 - neiClickCount * 10)})`;
+
+        // Legg til glow effekt
+        jaBtn.style.boxShadow = `0 10px 0 #b13e55, 0 15px 25px rgba(0,0,0,0.3), 0 0 ${neiClickCount * 5}px #ffd700`;
+
+        // Sørg for at JA alltid har høyere z-index
+        jaBtn.style.zIndex = '40';
+      }
+
+      // Oppdater hovedtekst basert på antall ganger Nei er trykket
+      function updateHovedTekst() {
+        if (neiClickCount === 0) {
+          hovedTekst.textContent = originalTekst;
+        } else if (neiClickCount <= 7) {
+          const index = Math.min(neiClickCount - 1, neiTekster.length - 1);
+          hovedTekst.textContent = '🌹 ' + neiTekster[index] + ' 🌹';
+        } else {
+          hovedTekst.textContent = '🌹 Jaja så du ville d asså❤️ 🌹';
+        }
+      }
+
+      // Sjekk om JA-knappen dekker Nei-knappen (KUN etter 7 klikk)
+      function checkIfJaCoversNei() {
+        if (isAnswered) return;
+
+        // VIKTIG: Sjekker kun dekning etter 7 klikk
+        if (neiClickCount < 7) return; // Ikke dekker før etter 7 klikk
+
+        const jaRect = jaBtn.getBoundingClientRect();
+        const neiRect = neiBtn.getBoundingClientRect();
+
+        // Sjekk om JA-knappen dekker Nei-knappen
+        const jaCoversNei = (
+          jaRect.left <= neiRect.left + 15 &&
+          jaRect.right >= neiRect.right - 15 &&
+          jaRect.top <= neiRect.top + 15 &&
+          jaRect.bottom >= neiRect.bottom - 15
+        );
+
+        if (jaCoversNei && neiClickCount >= 7) {
+          // Gjør Nei-knappen ikke-klikkbar og skjul den litt
+          neiBtn.style.pointerEvents = 'none';
+          neiBtn.style.opacity = '0.2';
+          neiBtn.style.cursor = 'default';
+        }
+      }
+
+      // Vis feiringsside når JA trykkes
+      function showCelebration() {
+        if (isAnswered) return;
+        isAnswered = true;
+
+        // Skjul hovedkortet med fade ut
+        mainCard.classList.add('fade-out');
+
+        // Vis feiringssiden
+        celebrationScreen.classList.add('show');
+
+        // Lag ekstra roser på feiringssiden
+        createCelebrationRoses();
+
+        // Vibrer hvis på mobil (bare for gøy)
+        try {
+          if (navigator.vibrate) {
+            navigator.vibrate([200, 100, 200]);
+          }
+        } catch (e) {}
+      }
+
+      // --- Event Listeners ---
+
+      // Nei-knapp: hopper til FAST posisjon, vokser JA, endrer tekst
+      neiBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        if (isAnswered) return;
+        if (neiBtn.style.pointerEvents === 'none') return; // Hvis knappen er dekket
+
+        neiClickCount++;
+
+        // Oppdater alt
+        updateJaButton();
+        updateHovedTekst();
+
+        // Få Nei-knappen til å riste litt før den hopper
+        neiBtn.style.transform = 'translateX(5px) translate(-50%, -50%)';
+        setTimeout(() => {
+          neiBtn.style.transform = 'translateX(-5px) translate(-50%, -50%)';
+        }, 50);
+        setTimeout(() => {
+          neiBtn.style.transform = 'translateX(3px) translate(-50%, -50%)';
+        }, 100);
+        setTimeout(() => {
+          neiBtn.style.transform = 'translateX(-3px) translate(-50%, -50%)';
+        }, 150);
+        setTimeout(() => {
+          // Flytt til FAST posisjon (alltid bak JA)
+          moveNeiButtonToFixedPosition();
+        }, 200);
+
+        // Sjekk om JA dekker Nei etter hvert klikk
+        setTimeout(checkIfJaCoversNei, 300);
+      });
+
+      // Ja-knapp: vis feiringsside
+      jaBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        showCelebration();
+      });
+
+      // Initialiser
+      createRoses();
+
+      // Sett initial posisjon for Nei-knappen
+      setTimeout(() => {
+        neiBtn.style.position = 'relative';
+        neiBtn.style.left = 'auto';
+        neiBtn.style.top = 'auto';
+        neiBtn.style.transform = 'none';
+        neiBtn.style.zIndex = '30'; // Bak JA
+        jaBtn.style.zIndex = '40'; // Foran Nei
+      }, 100);
+
+      // Legg til litt tilfeldig bevegelse på roser (for ekstra effekt)
+      setInterval(() => {
+        const roses = document.querySelectorAll('.rose-container .rose');
+        roses.forEach(rose => {
+          // Litt tilfeldig vind-effekt
+          const windShift = (Math.random() - 0.5) * 5;
+          rose.style.transform = `translateX(${windShift}px)`;
+        });
+      }, 3000);
+
+      // Sjekk jevnlig om JA dekker Nei (men kun etter 7 klikk)
+      setInterval(checkIfJaCoversNei, 500);
+
+      // Ved vindusendring, behold fast posisjon (prosentbasert tilpasser seg automatisk)
+      window.addEventListener('resize', () => {
+        // Ingen handling nødvendig - prosentbaserte verdier tilpasser seg automatisk
+      });
+
+    })();
+  </script>
+</body>
+</html>
